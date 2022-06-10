@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>OTP Store</title>
+        <link rel="stylesheet" href="./css/bootstrap-dark.min.css" />
+        <!-- <link rel="stylesheet" href="./css/font-awesome.min.css" /> -->
+        <link rel="stylesheet" href="./datatables/datatables.min.css" />
+        <link rel="stylesheet" href="./datatables/css/dataTables.dataTables.min.css" />
+
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        />
+    </head>
+    <body class="bootstrap-dark">
+        <nav class="navbar navbar-expand-lg navbar-themed bg-themed">
+            <div class="container px-lg-5">
+                <a class="navbar-brand" href="#!">OTP Store</a>
+                <button
+                    class="navbar-toggler"
+                    type="button"
+                    data-toggle="collapse"
+                    data-target="#navbarSupportedContent"
+                    aria-controls="navbarSupportedContent"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation"
+                >
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div
+                    class="collapse navbar-collapse d-lg-flex justify-content-between ml-lg-5"
+                    id="navbarSupportedContent"
+                >
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link" href="#!">Refresh</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#!" data-toggle="modal" data-target="#add-modal">Add</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0"></ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- main-->
+        <div class="container">
+            <h1 class="text-center my-5">All your OTP accounts are here</h1>
+
+            <h4 class="text-center">OTPs will refresh in: <span id="counter"></span>s</h4>
+
+            <div id="action-result" class="bg-dark m-0 p-0"></div>
+
+            <table class="mt-1 w-100" id="otp-list">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Secret</th>
+                        <th>OTP</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+
+        <!-- modal -->
+        <div
+            class="modal fade"
+            id="add-modal"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="exampleModalCenterTitle"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLongTitle">Add New Account</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card">
+                            <div class="card-body">
+                                <form id="add-form" class="mt-4">
+                                    <p>Scan a QR code and enter the link below</p>
+                                    <div class="form-gruop mb-2">
+                                        <label for="link">Link:</label>
+                                        <input
+                                            type="link"
+                                            name="link"
+                                            id="link"
+                                            placeholder="otpauth://...."
+                                            required
+                                            class="form-control form-control-lg"
+                                        />
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <p>Or manually enter the profile name and secret below?</p>
+                                    <div class="form-gruop mb-2">
+                                        <label for="name">Name:</label>
+                                        <input
+                                            type="name"
+                                            name="name"
+                                            id="name"
+                                            placeholder="name"
+                                            required
+                                            class="form-control form-control-lg"
+                                        />
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="form-gruop mb-2">
+                                        <label for="secret">Secret:</label>
+                                        <input
+                                            type="secret"
+                                            name="secret"
+                                            id="secret"
+                                            placeholder="secret"
+                                            required
+                                            class="form-control form-control-lg"
+                                        />
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button id="save-account-btn" type="button" class="btn btn-primary">Add Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer-->
+        <footer class="py-5 bg-themed">
+            <div class="container">
+                <p class="m-0 text-center text-white">Copyright &copy; OTP Store 2022</p>
+            </div>
+        </footer>
+
+        <script src="./js/jquery.min.js"></script>
+        <script src="./js/bootstrap.min.js"></script>
+        <script src="./datatables/datatables.min.js"></script>
+        <script src="./datatables/js/dataTables.dataTables.min.js"></script>
+        <script src="./js/app.js"></script>
+        <script>
+            let table = null;
+
+            function initTable() {
+                table = $('#otp-list').DataTable({
+                    dom: 'Bfrtip',
+                    scrollX: true,
+                    columns: getColumns(),
+                });
+                $('#otp-list tbody').on('click', 'tr .delete-btn', function () {
+                    let row = table.row($(this).closest('tr')).data();
+                    let id = row['id'];
+                    $.ajax('./delete.php', {
+                        method: 'POST',
+                        data: { id: id },
+                    })
+                        .then(function () {
+                            load();
+                            showAlert('Profile deleted successfully', true);
+                        })
+                        .catch(function (e) {
+                            console.log(e);
+                            showAlert('Profile could not be deleted', true);
+                        });
+                });
+            }
+
+            function load() {
+                $.get('./getAll.php')
+                    .then(function (res) {
+                        if (table == null) {
+                            // if table not created yet, initialize the table and attach click event handlers
+                            initTable();
+                        }
+                        // load the table with new data
+                        table.clear().rows.add(res.data).draw(false);
+                    })
+                    .catch(function (e) {
+                        showAlert('Table loading error');
+                    });
+            }
+
+            function getColumns() {
+                return [
+                    { data: 'id', name: 'id', searchable: true, orderable: true },
+                    { data: 'name', name: 'name', searchable: true, orderable: true },
+                    { data: 'secret', name: 'secret', searchable: true, orderable: true, render: manageSecret },
+                    { data: 'otp', name: 'otp', searchable: true, orderable: true, render: manageOTP },
+                    { data: null, name: null, searchable: false, orderable: false, render: manageAction },
+                ];
+            }
+
+            function manageSecret(data, type, row) {
+                return data;
+            }
+
+            function manageOTP(data, type, row) {
+                return '<i class="fa fa-key text-primary"></i> ' + data;
+            }
+
+            function manageAction(data, type, row) {
+                return '<button class="delete-btn btn" title="Delete profile"><i class="fa fa-trash text-danger"></i></button>';
+            }
+
+            function showAlert(msg, success = true) {
+                $('#action-result').html(`
+                    <div class="bg-dark text-light alert alert-${
+                        success ? 'success' : 'danger'
+                    } alert-dismissible fade show" role="alert">
+                        <strong class="text-${success ? 'success' : 'danger'}">${msg}</strong>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                `);
+            }
+
+            $(document).ready(function () {
+                load();
+
+                setInterval(function () {
+                    let s = new Date().getSeconds();
+                    let remain = s < 30 ? 30 - s : 60 - s;
+                    $('#counter').text(remain);
+                    if (s == 0 || s == 30) load();
+                }, 500 /* interval of 0.5s so that no second is missed */);
+
+                $('#save-account-btn').click(function () {
+                    $.ajax('./create.php', {
+                        method: 'POST',
+                        data: $('#add-form').serialize(),
+                    })
+                        .then(function () {
+                            load();
+                            $('#name').val('');
+                            $('#link').val('');
+                            $('#secret').val('');
+                            $('#add-modal').modal('hide');
+                            showAlert('Profile added successfully', true);
+                        })
+                        .catch(function (e) {
+                            console.log(e);
+                            $('#add-modal').modal('hide');
+                            showAlert('Profile could not be added', false);
+                        });
+                });
+            });
+        </script>
+    </body>
+</html>
